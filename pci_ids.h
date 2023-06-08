@@ -12,6 +12,7 @@
 static const struct pci_device_id pciidlist[] = {
     {0x1002, 0x67df, 0x1da2, 0xe366, 0, 0, CHIP_POLARIS10},     // RX580 (Sapphire Nitro+)
     {0x1002, 0x67df, 0x1043, 0x04fd, 0, 0, CHIP_POLARIS10},     // RX480 (Strix)
+    {0x1002, 0x67df, 0x1043, 0x0588, 0, 0, CHIP_POLARIS10},     // RX570 8G (Strix)
     {0x1002, 0x67df, 0x1043, 0x0517, 0, 0, CHIP_POLARIS10},     // RX580 (Strix)
     {0x1002, 0x67FF, 0x1043, 0x04BC, 0, 0, CHIP_POLARIS11},     // RX560
     {0x1002, 0x687F, 0x1043, 0x0555, 0, 0, CHIP_VEGA10},        // Vega 56 (Strix)

@@ -7,6 +7,7 @@
 #include "aura-gpu-bios.h"
 #include "aura-gpu-reg.h"
 #include "atom/atom.h"
+#include "main.h"
 
 struct ATOM_MASTER_LIST_OF_COMMAND_TABLES {
     uint16_t ASIC_Init;                              //Function Table, used by various SW components,latest version 1.1
@@ -160,7 +161,7 @@ static void mm_write (
 #define HW_I2C_READ                     0
 #define HW_ASSISTED_I2C_STATUS_FAILURE  2
 #define HW_ASSISTED_I2C_STATUS_SUCCESS  1
-#define UC_LINE_NUMBER			7
+#define UC_LINE_NUMBER			        6
 
 struct transaction_parameters {
     uint8_t     ucI2CSpeed;
@@ -449,12 +450,13 @@ static struct pci_dev *find_pci_dev (
 }
 
 struct i2c_adapter *aura_i2c_bios_create (
-    void
+    struct aura_adapter adapters[4]
 ){
     struct pci_dev *pci_dev = find_pci_dev();
     struct hw_i2c_context *context;
 
     if (!pci_dev) {
+        AURA_ERR("Failed to find a valid pci device");
         AURA_ERR("Failed to find a valid pci device");
         return NULL;
     }

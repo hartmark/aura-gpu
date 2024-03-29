@@ -114,6 +114,11 @@ struct hw_i2c_context {
     container_of(ptr, struct hw_i2c_context, atom_card_info) \
 )
 
+static struct pci_device_info {
+    struct pci_dev* device;
+    struct pci_device_id id;
+};
+
 static uint32_t __invalid_read (
     struct card_info *info,
     uint32_t reg
@@ -161,7 +166,6 @@ static void mm_write (
 #define HW_I2C_READ                     0
 #define HW_ASSISTED_I2C_STATUS_FAILURE  2
 #define HW_ASSISTED_I2C_STATUS_SUCCESS  1
-#define UC_LINE_NUMBER                  6
 #define UC_LINE_NUMBER_POLARIS          6
 #define UC_LINE_NUMBER_VEGA             7
 #define UC_LINE_NUMBER_DEFAULT          6
@@ -457,39 +461,56 @@ error_free_all:
     return ERR_PTR(err);
 }
 
-static struct pci_dev *find_pci_dev (
-    void
+/*
+ * Stores pci device and id for at most MAX_AURA_DEVICES devices
+ */
+void find_pci_devs (
+    struct pci_device_info pci_devs[MAX_AURA_DEVICES]
 ){
-    struct pci_dev *pci_dev = NULL;
-    const struct pci_device_id *match;
+    struct pci_dev* pci_dev;
+    struct pci_device_id *match;
+    int matched = 0;
 
-    while (NULL != (pci_dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, pci_dev))) {
+    while (
+        NULL != (pci_dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, pci_dev)) &&
+        matched < MAX_AURA_DEVICES
+    ) {
         match = pci_match_id(pciidlist, pci_dev);
-        if (match)
-            return pci_dev;
+        if (match) {
+            pci_devs[matched].device = pci_dev;
+            pci_devs[matched].id = *match;
+            ++matched;
+        }
     }
-
-    return NULL;
 }
 
 void aura_i2c_bios_create (
     struct aura_adapter adapters[MAX_AURA_DEVICES]
 ){
-    struct pci_dev *pci_dev = find_pci_dev();
-    struct hw_i2c_context *context;
+    // Finds compatible devices
+    struct pci_device_info pci_devs[] = {
+        [ 0 ... MAX_AURA_DEVICES ] = { NULL, {0, 0, 0} }
+    };
+    find_pci_devs(pci_devs);
 
-    if (!pci_dev) {
-        AURA_ERR("Failed to find a valid pci device");
-        AURA_ERR("Failed to find a valid pci device");
-        adapters[0].adapter = NULL;
+    // check the first slot for failure
+    if (!pci_devs[0].device) {
+        AURA_ERR("Failed to find any valid pci device");
     }
 
-    context = aura_gpu_i2c_create(pci_dev);
-    if (IS_ERR_OR_NULL(context))
-        adapters[0].adapter = ERR_PTR(CLEAR_ERR(context));
+    // Create and stores a context for every device
+    struct hw_i2c_context *context;
+    for(int i = 0; i < MAX_AURA_DEVICES; ++i) {
+        if(pci_devs[i].device) {
+            context = aura_gpu_i2c_create(pci_devs[i].device);
+            if (IS_ERR_OR_NULL(context))
+                adapters[i].adapter = ERR_PTR(CLEAR_ERR(context));
 
-    adapters[0].asic_type = CHIP_POLARIS10;
-    adapters[0].adapter = &context->adapter;
+            // Stores device and asic type
+            adapters[i].asic_type = pci_devs[i].id.driver_data;
+            adapters[i].adapter = &context->adapter;
+        }
+    }
 }
 
 void aura_i2c_bios_destroy (

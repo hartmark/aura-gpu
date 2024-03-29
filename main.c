@@ -20,7 +20,7 @@ static int __init aura_module_init (
 
     // clears error on all devices
     for (int i = 0; i < MAX_AURA_DEVICES; ++i) {
-        if (IS_ERR_OR_NULL(adapters[i].adapter))
+        if (IS_ERR(adapters[i].adapter))
             CLEAR_ERR(adapters[i].adapter);
     }
 

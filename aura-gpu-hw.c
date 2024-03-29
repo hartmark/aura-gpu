@@ -161,7 +161,11 @@ static void mm_write (
 #define HW_I2C_READ                     0
 #define HW_ASSISTED_I2C_STATUS_FAILURE  2
 #define HW_ASSISTED_I2C_STATUS_SUCCESS  1
-#define UC_LINE_NUMBER			        6
+#define UC_LINE_NUMBER                  6
+#define UC_LINE_NUMBER_POLARIS          6
+#define UC_LINE_NUMBER_VEGA             7
+#define UC_LINE_NUMBER_DEFAULT          6
+#define UC_LINE_NUMBER_DEFAULT_STR "6 (Polaris)" // Default as string, to be used in messages
 
 struct transaction_parameters {
     uint8_t     ucI2CSpeed;
@@ -175,6 +179,22 @@ struct transaction_parameters {
     uint8_t     ucSlaveAddr;
     uint8_t     ucLineNumber;
 };
+
+/*
+ * Returns the line number
+ */
+static uint8_t line_number_from_asic_type(enum aura_asic_type type){
+    switch (type) {
+        case CHIP_POLARIS10:
+        case CHIP_POLARIS11:
+            return UC_LINE_NUMBER_POLARIS;
+        case CHIP_VEGA10:
+            return UC_LINE_NUMBER_VEGA;
+        default:
+            AURA_WARN("Unknown uc line for asic, defaulting to line " UC_LINE_NUMBER_DEFAULT_STR);
+            return UC_LINE_NUMBER_DEFAULT;
+    }
+}
 
 static error_t aura_gpu_i2c_process_i2c_ch(
     struct hw_i2c_context *context,
@@ -203,7 +223,10 @@ static error_t aura_gpu_i2c_process_i2c_ch(
     args.ucTransBytes = 1;
     args.ucSlaveAddr = slave_addr << 1;
     args.ucRegIndex = offset;
-    args.ucLineNumber = UC_LINE_NUMBER;
+
+    // Find the line tu use for this particular device
+    enum aura_asic_type type = aura_i2c_adapter_asic_type(&context->adapter);
+    args.ucLineNumber = line_number_from_asic_type(type);
 
     AURA_DBG("Pre Transaction: addr = %x, offset = %x, rw = %s, count = %d, out = %x",
         args.ucSlaveAddr >> 1,
@@ -449,8 +472,8 @@ static struct pci_dev *find_pci_dev (
     return NULL;
 }
 
-struct i2c_adapter *aura_i2c_bios_create (
-    struct aura_adapter adapters[4]
+void aura_i2c_bios_create (
+    struct aura_adapter adapters[MAX_AURA_DEVICES]
 ){
     struct pci_dev *pci_dev = find_pci_dev();
     struct hw_i2c_context *context;
@@ -458,14 +481,15 @@ struct i2c_adapter *aura_i2c_bios_create (
     if (!pci_dev) {
         AURA_ERR("Failed to find a valid pci device");
         AURA_ERR("Failed to find a valid pci device");
-        return NULL;
+        adapters[0].adapter = NULL;
     }
 
     context = aura_gpu_i2c_create(pci_dev);
     if (IS_ERR_OR_NULL(context))
-        return ERR_PTR(CLEAR_ERR(context));
+        adapters[0].adapter = ERR_PTR(CLEAR_ERR(context));
 
-    return &context->adapter;
+    adapters[0].asic_type = CHIP_POLARIS10;
+    adapters[0].adapter = &context->adapter;
 }
 
 void aura_i2c_bios_destroy (

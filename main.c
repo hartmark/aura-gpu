@@ -7,20 +7,22 @@
 #include "aura-gpu-hw.h"
 #include "include/types.h"
 
+// Stores i2c_adapters and asic type
 static struct aura_adapter adapters[] = {
-        {NULL, CHIP_LAST},
-        {NULL, CHIP_LAST},
-        {NULL, CHIP_LAST},
-        {NULL, CHIP_LAST},
+    [0 ... MAX_AURA_DEVICES] = {NULL, CHIP_LAST}
 };
-//static struct i2c_adapter *adapter = NULL;
 
 static int __init aura_module_init (
     void
 ){
-    adapters[0].adapter = aura_i2c_bios_create();
-    if (IS_ERR_OR_NULL(adapters[0].adapter))
-        CLEAR_ERR(adapters[0].adapter);
+    // find at most MAX_AURA_DEVICES devices
+    aura_i2c_bios_create(adapters);
+
+    // clears error on all devices
+    for (int i = 0; i < MAX_AURA_DEVICES; ++i) {
+        if (IS_ERR_OR_NULL(adapters[i].adapter))
+            CLEAR_ERR(adapters[i].adapter);
+    }
 
     return 0;
 }
@@ -28,12 +30,27 @@ static int __init aura_module_init (
 static void __exit aura_module_exit (
     void
 ){
-    if (adapters[0].adapter)
-        aura_i2c_bios_destroy(adapters[0].adapter);
+    for (int i = 0; i < MAX_AURA_DEVICES; ++i) {
+        if (adapters[i].adapter)
+            aura_i2c_bios_destroy(adapters[i].adapter);
+    }
 }
 
+/*
+ * Returns the AURA asic type associated to a certain adapter
+ */
 enum aura_asic_type aura_i2c_adapter_asic_type(struct i2c_adapter* adapter) {
-    return adapters[0].asic_type;
+    for (int i = 0; i < MAX_AURA_DEVICES; ++i){
+        // If adapter is not null, matches on adapter number
+        if (
+            adapters[i].adapter &&
+            i2c_adapter_id(adapters[i].adapter) == i2c_adapter_id(adapter)
+            ) {
+            return adapters[i].asic_type;
+        }
+    }
+    AURA_ERR("Asic_type not registered");
+    return CHIP_LAST;
 }
 
 module_init(aura_module_init);

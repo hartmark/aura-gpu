@@ -8,6 +8,6 @@
 /*
  * Returns the AURA asic type associated to a certain adapter
  */
-enum aura_asic_type aura_i2c_adapter_asic_type(struct i2c_adapter* adapter);
+enum aura_asic_type aura_i2c_adapter_asic_type(struct i2c_adapter *adapter);
 
 #endif

@@ -1236,7 +1236,8 @@ static void _aura_gpu_bios_read_name(
 
     name_str = get_str(context, name_offset, sizeof(context->bios.name) - 1);
     if (*name_str != '\0')
-        strlcpy(context->bios.name, name_str, sizeof(context->bios.name));
+        if (strscpy(context->bios.name, name_str, sizeof(context->bios.name)) == -E2BIG)
+                AURA_WARN("Bios name too long");
 }
 
 static bool _aura_gpu_bios_is_atom(

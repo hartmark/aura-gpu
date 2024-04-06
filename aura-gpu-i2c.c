@@ -640,8 +640,12 @@ static struct aura_i2c_context* aura_gpu_i2c_context_create (
     context->timeout_interval   = GPU_I2C_TIMEOUT_INTERVAL;
 
     context->i2c_adapter.owner  = THIS_MODULE;
-    context->i2c_adapter.class  = I2C_CLASS_DDC;
     context->i2c_adapter.algo   = &aura_gpu_i2c_algo;
+    context->i2c_adapter.class  = I2C_CLASS_DEPRECATED; /* I2C_CLASS_DDC was removed in kernel version 6.8
+                                                         * it only appeared in the radeon_i2c kernel driver
+                                                         * no in-tree module used it
+                                                         * and class based device detection is discouraged */
+
 
     snprintf(context->i2c_adapter.name, sizeof(context->i2c_adapter.name), "AURA GPU adapter");
     i2c_set_adapdata(&context->i2c_adapter, context);

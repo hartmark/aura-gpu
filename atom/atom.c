@@ -33,6 +33,7 @@
 #include "atom.h"
 #include "atom-names.h"
 #include "atom-bits.h"
+#include "../debug.h"
 
 #define ATOM_COND_ABOVE        0
 #define ATOM_COND_ABOVEOREQUAL 1
@@ -1305,7 +1306,8 @@ struct atom_context *atom_parse(struct card_info *card, void const *bios)
     str = CSTR(idx);
     if (*str != '\0') {
         pr_info("ATOM BIOS: %s\n", str);
-        strlcpy(ctx->vbios_version, str, sizeof(ctx->vbios_version));
+        if (strscpy(ctx->vbios_version, str, sizeof(ctx->vbios_version)) == -E2BIG)
+            AURA_WARN("Bios version string too long");
     }
 
     return ctx;

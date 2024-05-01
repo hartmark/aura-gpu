@@ -439,7 +439,11 @@ static struct hw_i2c_context *aura_gpu_i2c_create (
     context->atom_context->scratch = (uint32_t*)context->scratch;
     context->atom_context->scratch_size_bytes = sizeof(context->scratch);
     context->adapter.owner = THIS_MODULE;
-    context->adapter.class = I2C_CLASS_DDC;
+    context->adapter.class = I2C_CLASS_DEPRECATED; /* I2C_CLASS_DDC was removed in kernel version 6.8
+                                                    * it only appeared in the radeon_i2c kernel driver
+                                                    * no in-tree module used it
+                                                    * and class based device detection is discouraged */
+
     context->adapter.dev.parent = &pci_dev->dev;
 
     i2c_set_adapdata(&context->adapter, context);

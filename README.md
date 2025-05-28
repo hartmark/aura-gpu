@@ -1,3 +1,8 @@
+DEPRECATED
+==========
+
+As of Linux version 6.15, the functionality provided by this module is now provided by the upstream `AMDGPU` kernel driver. For more information see the [patch series](https://lists.freedesktop.org/archives/amd-gfx/2025-January/118399.html)
+
 Before Installing
 =================
 
